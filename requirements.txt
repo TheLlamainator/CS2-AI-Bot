@@ -1,0 +1,7 @@
+ultralytics
+torch
+opencv-python
+mss
+pynput
+numpy
+pywin32
