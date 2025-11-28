@@ -210,7 +210,7 @@ try:
 
         results_gen = model.predict(
             frame,
-            conf=0.25,
+            conf=0.3,
             device=device,
             imgsz=320,
             stream=True,
@@ -269,10 +269,6 @@ try:
 
             dx = target_cx - screen_cx
             dy = target_cy - screen_cy
-
-            # Draw line from center to target on overlay
-            cv2.line(overlay, (screen_cx, screen_cy), (target_cx, target_cy), (255, 0, 255), 1)
-            cv2.circle(overlay, (screen_cx, screen_cy), 8, (255, 255, 255), 1)
 
             if ctrl_held[0]:
                 snap_to_target(dx, dy)
