@@ -108,7 +108,7 @@ After startup, select your target class:
 
 | Parameter | Default | Description |
 |-----------|---------|-------------|
-| `conf` | 0.25 | Confidence threshold (0.0-1.0) |
+| `conf` | 0.3 | Confidence threshold (0.0-1.0) |
 | `imgsz` | 320 | Inference image size |
 | `device` | auto | GPU (0) or CPU |
 
@@ -169,16 +169,15 @@ graph LR
 
 - 🟢 **Green Boxes** - Detected targets with confidence scores
 - 🔴 **Red Circles** - Target center points (adjusted for headshots)
-- 🟣 **Purple Lines** - Active lock-on indicator
-- ⚪ **White Circle** - Screen center crosshair
 - 🟡 **Yellow Text** - Real-time FPS counter
 - 🔴/🟢 **Status** - SHOOTING (red) / READY (green)
+- ⚪ **Clean Design** - Minimal overlay for maximum visibility
 
 ### Headshot Optimization
 
 ```python
-# Aims 20% above center of bounding box
-cy = int((y1 + y2) / 2 - 0.2 * box_height)
+# Aims 40% above center of bounding box
+cy = int((y1 + y2) / 2 - 0.4 * box_height)
 ```
 
 ---
@@ -191,7 +190,7 @@ cy = int((y1 + y2) / 2 - 0.2 * box_height)
 # In claude.py, line ~215
 results_gen = model.predict(
     frame,
-    conf=0.25,  # Change this: lower = more detections, higher = fewer but accurate
+    conf=0.3,  # Change this: lower = more detections, higher = fewer but accurate
     device=device,
     imgsz=320,
     stream=True,
