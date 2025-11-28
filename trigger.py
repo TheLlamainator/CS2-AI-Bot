@@ -242,7 +242,7 @@ try:
                     x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
                     cx = (x1 + x2) >> 1
                     box_height = y2 - y1
-                    cy = int((y1 + y2) / 2 - 0.2 * box_height)
+                    cy = int((y1 + y2) / 2 - 0.4 * box_height)
                     candidates.append({'center': (cx, cy), 'conf': float(conf)})
                     
                     # Thinner lines for faster rendering
