@@ -11,6 +11,15 @@ import win32api
 import win32gui
 import win32con
 
+# === [ Overlay Config ] ===
+use_overlay = input("Enable overlay? (y/n, default y): ").strip().lower()
+use_overlay = use_overlay != 'n'
+
+if use_overlay:
+    print("[Config] Overlay enabled")
+else:
+    print("[Config] Running in no-overlay mode")
+
 # === [ Resolution Config ] ===
 custom_width = input("Enter screen capture width (default 1920): ").strip()
 custom_height = input("Enter screen capture height (default 1080): ").strip()
@@ -186,9 +195,10 @@ fps_update_time = time.time()
 
 is_shooting = False
 
-# Create overlay window
-window_name = 'Aimbot Overlay'
-make_overlay_window(window_name, width, height)
+# Create overlay window if enabled
+if use_overlay:
+    window_name = 'Aimbot Overlay'
+    make_overlay_window(window_name, width, height)
 
 # Pre-calculate screen center for performance
 screen_cx = width >> 1
@@ -224,8 +234,9 @@ try:
 
         detections = results.boxes
 
-        # Create transparent overlay (black background will be made transparent)
-        overlay = np.zeros((height, width, 3), dtype=np.uint8)
+        # Create transparent overlay if enabled (black background will be made transparent)
+        if use_overlay:
+            overlay = np.zeros((height, width, 3), dtype=np.uint8)
 
         candidates = []
         with class_lock:
@@ -236,7 +247,6 @@ try:
             boxes_cpu = detections.xyxy.cpu().numpy()
             cls_cpu = detections.cls.cpu().numpy()
             conf_cpu = detections.conf.cpu().numpy()
-            
             for i, (box, cls_id, conf) in enumerate(zip(boxes_cpu, cls_cpu, conf_cpu)):
                 if current_idx is not None and int(cls_id) == current_idx:
                     x1, y1, x2, y2 = int(box[0]), int(box[1]), int(box[2]), int(box[3])
@@ -245,11 +255,12 @@ try:
                     cy = int((y1 + y2) / 2 - 0.4 * box_height)
                     candidates.append({'center': (cx, cy), 'conf': float(conf)})
                     
-                    # Thinner lines for faster rendering
-                    cv2.rectangle(overlay, (x1, y1), (x2, y2), (0, 255, 0), 1)
-                    cv2.circle(overlay, (cx, cy), 3, (0, 0, 255), -1)
-                    cv2.putText(overlay, f'{conf:.2f}', (x1, y1 - 5),
-                               cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 255, 0), 1)
+                    if use_overlay:
+                        # Thinner lines for faster rendering
+                        cv2.rectangle(overlay, (x1, y1), (x2, y2), (0, 255, 0), 1)
+                        cv2.circle(overlay, (cx, cy), 3, (0, 0, 255), -1)
+                        cv2.putText(overlay, f'{conf:.2f}', (x1, y1 - 5),
+                                   cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0, 255, 0), 1)
 
         if candidates:
             # Find target closest to screen center using squared distance (faster, no sqrt)
@@ -287,31 +298,36 @@ try:
             else:
                 if is_shooting:
                     ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
-                    is_shooting = False
-        else:
             if is_shooting:
                 ctypes.windll.user32.mouse_event(0x0004, 0, 0, 0, 0)
                 is_shooting = False
 
-        # Draw FPS and status on overlay
-        cv2.putText(overlay, f'FPS: {int(fps)}', (10, 25),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
-        
-        status_text = "SHOOTING" if is_shooting else "READY"
-        status_color = (0, 0, 255) if is_shooting else (0, 255, 0)
-        cv2.putText(overlay, status_text, (10, 45),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.4, status_color, 1)
-        
-        if current_idx is not None:
-            cv2.putText(overlay, f'Target: {class_names[current_idx]}', (10, 65),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
+        if use_overlay:
+            # Draw FPS and status on overlay
+            cv2.putText(overlay, f'FPS: {int(fps)}', (10, 25),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 1)
+            
+            status_text = "SHOOTING" if is_shooting else "READY"
+            status_color = (0, 0, 255) if is_shooting else (0, 255, 0)
+            cv2.putText(overlay, status_text, (10, 45),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.4, status_color, 1)
+            
+            if current_idx is not None:
+                cv2.putText(overlay, f'Target: {class_names[current_idx]}', (10, 65),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 255, 255), 1)
 
-        # Display transparent overlay with minimal wait time
-        cv2.imshow(window_name, overlay)
-        
-        # Handle ESC key with minimal delay for faster loop
-        if cv2.waitKey(1) & 0xFF == 27:  # ESC
-            break
+            # Display transparent overlay with minimal wait time
+            cv2.imshow(window_name, overlay)
+            
+            # Handle ESC key with minimal delay for faster loop
+            if cv2.waitKey(1) & 0xFF == 27:  # ESC
+                break
+        else:
+            # In no-overlay mode, print status to console periodically
+            if frame_count % 30 == 0:  # Every ~30 frames
+                status = "SHOOTING" if is_shooting else "READY"
+                target = f"Target: {class_names[current_idx]}" if current_idx is not None else "No target"
+                print(f"[Status] FPS: {int(fps)} | {status} | {target}", end='\r')
 
 finally:
     grabber.stop()
